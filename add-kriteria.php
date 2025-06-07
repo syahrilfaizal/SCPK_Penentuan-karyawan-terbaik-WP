@@ -2,92 +2,198 @@
 session_start();
 include('configdb.php');
 
-// Proses form saat submit
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    // Escape input nama alternatif
-    $alt_name = $mysqli->real_escape_string($_POST['alternatif']);
-
-    // Ambil daftar kriteria untuk menentukan kolom k1..kN
-    $resK = $mysqli->query("SELECT id_kriteria FROM kriteria ORDER BY id_kriteria");
-    $fields = [];
-    $values = [];
-    $idx = 1;
-    while ($rk = $resK->fetch_assoc()) {
-        $field = 'k' . $idx;
-        $point = isset($_POST[$field]) ? (int) $_POST[$field] : 0;
-        $fields[] = $field;
-        $values[] = $point;
-        $idx++;
+function jml_kriteria() {
+        global $mysqli;  // Ensure the database connection is accessible
+        $res = $mysqli->query("SELECT COUNT(*) as cnt FROM kriteria");
+        $row = $res->fetch_assoc();
+        return (int)$row['cnt'];
     }
 
-    // Siapkan dan jalankan query INSERT
-    $sql = sprintf(
-        "INSERT INTO alternatif (alternatif, %s) VALUES ('%s', %s)",
-        implode(', ', $fields),
-        $alt_name,
-        implode(', ', $values)
-    );
+if ($_SERVER['REQUEST_METHOD'] == 'POST') {
+    $kriteria = $_POST['kriteria'];
+    $kepentingan = $_POST['kepentingan'];
+    $cost_benefit = $_POST['cost_benefit'];
 
-    if ($mysqli->query($sql)) {
-        header('Location: alternatif.php');
-        exit;
+    // Menambahkan data ke tabel kriteria
+    if ($stmt = $mysqli->prepare("INSERT INTO kriteria (kriteria, kepentingan, cost_benefit) VALUES (?, ?, ?)")) {
+        $stmt->bind_param("sss", $kriteria, $kepentingan, $cost_benefit);
+        $stmt->execute();
+        $stmt->close();
+
+        // Menambahkan kolom baru untuk kriteria di tabel alternatif
+        $kriteria_count = jml_kriteria();  // Fungsi untuk menghitung jumlah kriteria
+        $new_column_name = 'k' . $kriteria_count;  // Kolom baru untuk kriteria, misalnya k6, k7, dst.
+
+        // Menambahkan kolom baru di tabel alternatif
+        $alter_query = "ALTER TABLE alternatif ADD COLUMN " . $new_column_name . " INT DEFAULT 0";
+        if ($mysqli->query($alter_query) === TRUE) {
+            echo "Kolom " . $new_column_name . " berhasil ditambahkan ke tabel alternatif.";
+        } else {
+            echo "Error: " . $mysqli->error;
+        }
+
+        // Redirect ke halaman kriteria setelah sukses
+        header('Location: kriteria.php');
+        exit();
     } else {
-        $error = $mysqli->error;
+        echo "Error: " . $mysqli->error;
     }
-}
-
-// Ambil daftar kriteria untuk form
-$resK = $mysqli->query("SELECT id_kriteria, kriteria FROM kriteria ORDER BY id_kriteria");
-$kriteria = [];
-while ($row = $resK->fetch_assoc()) {
-    $kriteria[] = $row;
 }
 ?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Tambah Alternatif - <?php echo $_SESSION['judul']; ?></title>
+    <meta name="description" content="">
+    <meta name="author" content="">
+    <link rel="icon" href="favicon.ico">
+    <title><?php echo $_SESSION['judul']." - ".$_SESSION['by'];?></title>
     <link href="ui/css/cerulean.min.css" rel="stylesheet">
+
     <style>
-        body { margin-top: 20px; font-family: 'Roboto', sans-serif; background-color: #f4f4f4; }
-        .panel { border-radius: 0; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .panel-heading { background-color: #2980b9 !important; color: #fff !important; }
-        .btn { border-radius: 5px; }
+        body {
+            font-family: 'Roboto', sans-serif;
+            background-color: #f4f4f4;
+            margin-top: 20px;
+        }
+        .navbar {
+            background-color: #2c3e50;
+            border: none;
+            border-radius: 0;
+        }
+        .navbar-brand, .navbar-nav li a {
+            color: #ecf0f1 !important;
+            font-size: 18px;
+        }
+        .panel {
+            border-radius: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .panel-heading {
+            background-color: #2980b9 !important;
+            color: #fff !important;
+            border-radius: 0;
+        }
+        .panel-body {
+            padding: 20px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-control {
+            border-radius: 0;
+        }
+        .btn {
+            border-radius: 10px; 
+            font-size: 16px;
+            padding: 10px 20px;
+        }
+        .btn-info {
+            background-color: #3498db;
+            border-color: #3498db;
+        }
+        .btn-info:hover {
+            background-color: #2980b9;
+            border-color: #2980b9;
+        }
+        .btn-warning {
+            background-color: #f39c12;
+            border-color: #f39c12;
+        }
+        .btn-warning:hover {
+            background-color: #e67e22;
+            border-color: #e67e22;
+        }
+        .btn-primary {
+            background-color: #2ecc71;
+            border-color: #2ecc71;
+        }
+        .btn-primary:hover {
+            background-color: #27ae60;
+            border-color: #27ae60;
+        }
+        .panel-footer {
+            background-color: #2980b9 !important;
+            color: #fff !important;
+            border-radius: 0;
+            padding: 10px 20px;
+        }
+        .panel-footer a {
+            color: #fff;
+            text-decoration: none;
+        }
+        .panel-footer a:hover {
+            text-decoration: underline;
+        }
     </style>
 </head>
 <body>
+    <nav class="navbar navbar-default">
+        <div class="container">
+            <div class="navbar-header">
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+                    <span class="sr-only">Toggle navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+                <a class="navbar-brand" href="#"><b><?php echo $_SESSION['judul'];?></b></a>
+            </div>
+            <div id="navbar" class="navbar-collapse collapse pull-right">
+                <ul class="nav navbar-nav">
+                    <li><a href="index.php">Home</a></li>
+                    <li><a href="kriteria.php">Data Kriteria</a></li>
+                    <li><a href="alternatif.php">Data Alternatif</a></li>
+                    <li><a href="analisa.php">Analisa</a></li>
+                    <li><a href="perhitungan.php">Perhitungan</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
     <div class="container">
         <div class="panel panel-primary">
-            <div class="panel-heading"><h3 class="panel-title">Tambah Alternatif</h3></div>
+            <div class="panel-heading"><b>Tambah Data Kriteria</b></div>
             <div class="panel-body">
-                <?php if (!empty($error)): ?>
-                    <div class="alert alert-danger"><?php echo $error; ?></div>
-                <?php endif; ?>
-                <form method="post" action="">
-                    <div class="form-group">
-                        <label for="alternatif">Nama Alternatif</label>
-                        <input type="text" name="alternatif" id="alternatif" class="form-control" required>
-                    </div>
-                    <?php foreach ($kriteria as $idx => $k): ?>
+                <form role="form" method="post" action="add-kriteria.php">
+                    <div class="box-body">
                         <div class="form-group">
-                            <label for="k<?php echo $idx+1; ?>"><?php echo ucwords($k['kriteria']); ?> (1-5)</label>
-                            <input type="number"
-                                   name="k<?php echo $idx+1; ?>"
-                                   id="k<?php echo $idx+1; ?>"
-                                   class="form-control"
-                                   min="1" max="5"
-                                   value="3" required>
+                            <label for="kriteria">Kriteria</label>
+                            <input type="text" class="form-control" name="kriteria" id="kriteria" placeholder="Kriteria" required>
                         </div>
-                    <?php endforeach; ?>
-                    <button type="submit" class="btn btn-success">Simpan</button>
-                    <a href="alternatif.php" class="btn btn-default">Batal</a>
+                        <div class="form-group">
+                            <label for="kepentingan">Skala</label>
+                            <select class="form-control" name="kepentingan" id="kepentingan" required>
+                                <option value="1">1 - (STP) Sangat Tidak Penting</option>
+                                <option value="2">2 - (TP) Tidak Penting</option>
+                                <option value="3">3 - (CP) Cukup Penting</option>
+                                <option value="4">4 - (P) Penting</option>
+                                <option value="5">5 - (SP) Sangat Penting</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="cost_benefit">Cost / Benefit</label>
+                            <select class="form-control" name="cost_benefit" id="cost_benefit" required>
+                                <option value="cost">Cost</option>
+                                <option value="benefit">Benefit</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="box-footer">
+                        <button type="reset" class="btn btn-info">Reset</button>
+                        <a href="kriteria.php" type="cancel" class="btn btn-warning">Batal</a>
+                        <button type="submit" class="btn btn-primary">Tambahkan</button>
+                    </div>
                 </form>
             </div>
-            <div class="panel-footer text-right"><?php echo $_SESSION['by']; ?></div>
+            <div class="panel-footer text-primary text-right"><b><?php echo $_SESSION['by'];?></b></div>
         </div>
     </div>
+    <script src="ui/js/jquery-1.10.2.min.js"></script>
+    <script src="ui/js/bootstrap.min.js"></script>
+    <script src="ui/js/bootswatch.js"></script>
 </body>
 </html>

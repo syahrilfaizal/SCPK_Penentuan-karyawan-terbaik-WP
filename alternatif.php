@@ -119,6 +119,8 @@ include('configdb.php');
             $i=0;
             ?>
             <div class="panel-body table-responsive">
+                <a href="#" class="btn btn-primary pull-left" data-toggle="modal" data-target="#importModal">Import Data</a>
+                <a class='btn btn-warning pull-right' href='add-alternatif.php'> Tambah Data Alternatif</a><br /><br />
                 <table id="example" class="table table-striped table-bordered table-hover" cellspacing="0" width="100%">
                     <thead>
                         <tr>
@@ -155,6 +157,31 @@ include('configdb.php');
             <div class="panel-footer text-primary text-right"><b><?php echo $_SESSION['by'];?></b></div>
         </div>
     </div>
+
+    <!-- Modal Import -->
+<div id="importModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="importModalLabel">Import Data CSV/XLSX</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form action="import.php" method="post" enctype="multipart/form-data">
+                <div class="modal-body">
+                    <label for="file">Pilih File CSV/XLSX</label>
+                    <input type="file" class="form-control" name="file" id="file" accept=".csv, .xlsx" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Tutup</button>
+                    <button type="submit" class="btn btn-primary">Import</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
     <script src="ui/js/jquery-1.11.3.min.js"></script>
     <script src="ui/js/bootstrap.min.js"></script>
     <script src="ui/js/dataTables.bootstrap.min.js"></script>

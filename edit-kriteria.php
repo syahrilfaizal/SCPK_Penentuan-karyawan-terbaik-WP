@@ -77,7 +77,7 @@
                                             <input type="text" class="form-control" name="kriteria" id="kriteria" value="<?php echo $row["kriteria"];?>" placeholder="Kriteria">
                                         </div>
                                         <div class="form-group">
-                                            <label for="kepentingan">Nilai Kepentingan</label>
+                                            <label for="kepentingan">Skala</label>
 											<select class="form-control" name="kepentingan" id="kepentingan">
 												<option value='1' <?php if($row["kepentingan"]=='1') echo "selected"?>>1 - (STP) sangat tidak penting</option>
 												<option value='2' <?php if($row["kepentingan"]=='2') echo "selected"?>>2 - (TP) tidak penting</option>

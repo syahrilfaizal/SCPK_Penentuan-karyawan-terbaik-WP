@@ -5,14 +5,44 @@ include('configdb.php');
 // Handle delete request
 if (isset($_GET['delete_id'])) {
     $delete_id = $_GET['delete_id'];
+
+    // Mengambil urutan (nomor urut) kriteria yang akan dihapus
+    $result = $mysqli->query("SELECT id_kriteria, kriteria FROM kriteria ORDER BY id_kriteria ASC");
+    $kriteria_count = 1; // Mulai dari urutan pertama
+    $column_name = ""; // Variabel untuk nama kolom yang akan dihapus
+
+    // Loop untuk menemukan kolom yang sesuai dengan urutan delete_id
+    while ($row = $result->fetch_assoc()) {
+        if ($row['id_kriteria'] == $delete_id) {
+            $column_name = "k" . $kriteria_count; // Menentukan nama kolom (k1, k2, dst.)
+            break; // Keluar dari loop setelah menemukan kolom yang tepat
+        }
+        $kriteria_count++;
+    }
+
+    // Menghapus kolom dari tabel alternatif
+    if ($column_name != "") {
+        // Memulai query untuk menghapus kolom yang sesuai
+        $alter_query = "ALTER TABLE alternatif DROP COLUMN $column_name";
+        if ($mysqli->query($alter_query)) {
+            echo "Kolom $column_name berhasil dihapus dari tabel alternatif.";
+        } else {
+            echo "Error menghapus kolom: " . $mysqli->error;
+        }
+    }
+
+    // Hapus kriteria dari tabel kriteria
     $stmt = $mysqli->prepare("DELETE FROM kriteria WHERE id_kriteria = ?");
     $stmt->bind_param("i", $delete_id);
     $stmt->execute();
     $stmt->close();
+
+    // Redirect ke halaman kriteria setelah sukses
     header('Location: kriteria.php');
     exit();
 }
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -116,12 +146,13 @@ if (isset($_GET['delete_id'])) {
             }
             ?>
             <div class="panel-body table-responsive">
+                <a class='btn btn-warning pull-right' href='add-kriteria.php'> Tambah Data Kriteria</a><br /><br />
                 <table id="example" class="table table-striped table-bordered table-hover" cellspacing="0" width="100%">
                     <thead>
                         <tr>
                             <th>No.</th>
                             <th>Kriteria</th>
-                            <th>Kepentingan</th>
+                            <th>Skala</th>
                             <th>Cost / Benefit</th>
                             <th>Opsi</th>
                         </tr>
